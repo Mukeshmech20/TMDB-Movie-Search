@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply bg-night font-sans text-paper antialiased; }
+  h1, h2, h3 { @apply font-display; }
+  :focus-visible { @apply outline outline-2 outline-offset-2 outline-amber; }
+  ::selection { @apply bg-amber text-night; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  }
+}
+
+@layer components {
+  .page { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
+  .btn { @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill px-5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-amber text-night hover:bg-amber-deep; }
+  .btn-ghost { @apply btn border border-line text-paper hover:border-amber hover:text-amber; }
+  .btn-icon { @apply inline-flex h-11 w-11 items-center justify-center rounded-full bg-night/80 text-paper backdrop-blur transition-colors hover:text-amber; }
+  .field { @apply min-h-[44px] w-full rounded-poster border border-line bg-velvet px-3 text-sm text-paper placeholder:text-mute; }
+  .badge { @apply inline-flex items-center rounded-pill border border-line bg-velvet px-3 py-1 text-xs font-medium text-paper; }
+  .chip { @apply badge min-h-[36px] transition-colors hover:border-amber hover:text-amber; }
+  .skeleton { @apply animate-pulse rounded-poster bg-curtain; }
+  .toast { @apply rounded-poster border-l-4 bg-curtain px-4 py-3 text-sm shadow-poster; }
+  .modal-panel { @apply w-full max-w-3xl rounded-poster border border-line bg-velvet shadow-poster; }
+  .section-title { @apply text-2xl font-bold sm:text-3xl; }
+  .stub { @apply relative rounded-poster border border-line bg-velvet p-5; }
+  .stub-divider { @apply my-4 border-t-2 border-dashed border-line; }
+  .row-scroll { @apply flex snap-x gap-4 overflow-x-auto pb-4 pt-1; scrollbar-width: thin; scrollbar-color: #3A3450 transparent; }
+}
