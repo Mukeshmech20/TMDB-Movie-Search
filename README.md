@@ -1,99 +1,60 @@
-# CINESCAPE
+# CINESCAPE — Discover. Explore. Review. Repeat.
 
-**Discover. Explore. Review. Repeat.**
+A movie discovery and community review app built with React 19, Vite, Tailwind CSS, TMDB and (optionally) Supabase.
 
-CINESCAPE is a cinematic movie discovery and review app built with React, Vite and Tailwind CSS, powered by the [TMDB API v3](https://developer.themoviedb.org/docs/getting-started).
+## What you can do
 
-## Objectives
+- **Rate and review from any movie card**: every card has labelled *Rate*, *Review*, *Watchlist* and *Favorite* buttons. Half-star ratings, keyboard support (arrow keys, Home/End, Delete), validation (10–1000 characters), character counter, edit, delete and a review history in the Diary.
+- **Three scores, never mixed**: *TMDB* (out of 10), *CINESCAPE community* (out of 5, from the database) and *Your rating* (out of 5).
+- **Community (needs Supabase)**: accounts, profiles, public reviews, helpful votes (one per person, not on your own review), top reviewers, trending and latest reviews.
+- **Discover**: title search, genre / year / language / TMDB rating filters, sorting, real pagination, filter chips, shareable URLs.
+- **Also**: movie of the day (with the reason it was picked), mood picker, random picker, side-by-side comparison, personal diary, personal statistics, watchlist, favorites.
 
-- Browse trending, popular, top-rated, now-playing and upcoming movies.
-- Search and filter the catalogue (genre, year, rating, sort) with all filters working together.
-- Show a rich details page with cast, director, trailers, recommendations and similar movies.
-- Let visitors rate movies (half-star steps), write reviews, and keep a watchlist and favorites.
+Without Supabase the app is fully usable: ratings and reviews are saved in the browser, and community sections explain that they are switched off. Without TMDB credentials it shows a small clearly-labelled demo catalogue.
 
-## Features
-
-- Home: featured hero, Trending, Popular, Top rated, Recently viewed, Now playing, Coming soon, genre chips, two curated collections.
-- Discover: debounced title search with validation, genre / year / rating filters, three sort orders, removable filter chips, Load more, filters stored in the URL (survive refresh and back navigation).
-- Movie details: backdrop, poster, tagline, overview, runtime, genres, language, release date, TMDB rating and vote count, cast, director, production companies, budget, revenue, trailer/video modal, recommended and similar carousels.
-- Ratings: five-star component with hover preview, half stars, click or arrow-key rating, edit, remove, optional written review with validation, edit and delete.
-- Watchlist and Favorites with empty states, no duplicates, instant updates.
-- Toasts, skeleton loaders, image fallbacks, accessible dialog (focus trap, Escape), back-to-top, skip link, responsive mobile navigation.
-- Demo mode when no TMDB credentials are configured (clearly labelled with a banner).
-
-## Technology stack
-
-React 19, React Router, Vite, Tailwind CSS 3, TMDB API v3, ESLint. No other runtime dependencies.
-
-## Folder structure
-
-See [PROJECT_ARCHITECTURE.md](PROJECT_ARCHITECTURE.md).
-
-## Setup
+## Run locally
 
 ```bash
 npm install
-cp .env.example .env     # then add your TMDB credential
-npm run dev              # http://localhost:5173
+cp .env.example .env     # then fill in values
+npm run dev
+npm run lint && npm test && npm run build
 ```
 
-### TMDB registration and configuration
+## Configuration
 
-1. Create a free account at https://www.themoviedb.org/signup.
-2. Open Settings > API (https://www.themoviedb.org/settings/api) and request a developer key.
-3. Copy the **API Read Access Token** into `VITE_TMDB_READ_TOKEN` (preferred), or the **API Key** into `VITE_TMDB_API_KEY`, in `.env`.
-4. Restart `npm run dev` after editing `.env`.
+| Variable | Where | Purpose |
+|---|---|---|
+| `TMDB_READ_TOKEN` (or `TMDB_API_KEY`) | server only (Vercel env / local `.env`) | TMDB credential used by the `/api/tmdb` proxy |
+| `VITE_TMDB_PROXY=true` | build-time | Makes the browser call `/api/tmdb` instead of TMDB directly |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | build-time | Enables accounts and community reviews. **Anon key only. Never put the `service_role` key in this project.** |
+| `VITE_TMDB_READ_TOKEN` / `VITE_TMDB_API_KEY` | build-time | Legacy direct mode. **These are compiled into the public JavaScript and can be read by anyone.** |
 
-Important: Vite embeds `VITE_` variables in the browser bundle, so anyone who opens the deployed site can read the token. TMDB read tokens are intended for this use, but never use an account-level secret. `.env` is git-ignored; only `.env.example` is committed.
+### Why the TMDB proxy
 
-Without credentials the app runs in **demo mode**: a 16-film built-in sample with no posters, placeholder vote counts and no cast, trailers or credits. A banner is shown on every page.
+Anything prefixed `VITE_` ends up in the downloadable bundle. The previous version shipped the TMDB token that way. `api/tmdb/[...path].js` is a Vercel serverless function that holds the token server-side, only forwards read-only TMDB endpoints, and caches responses for 5 minutes. **If your old token was ever deployed, rotate it in your TMDB account settings.**
 
-## Scripts
+## Deploy on Vercel
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Development server |
-| `npm run build` | Production build into `dist/` |
-| `npm run preview` | Serve the production build locally |
-| `npm run lint` | ESLint, zero warnings allowed |
+1. Import the repository in Vercel (framework preset: Vite; `vercel.json` is included and handles SPA routing, security headers and the CSP).
+2. Add environment variables: `TMDB_READ_TOKEN`, `VITE_TMDB_PROXY=true`, and (optional) the two Supabase variables.
+3. Deploy. Remove any old `VITE_TMDB_READ_TOKEN` variable from Vercel and rotate the token.
 
-## Deployment
+## Supabase setup
 
-### GitHub
+See [`supabase/README.md`](supabase/README.md): create a project, run `supabase/migrations/001_cinescape_schema.sql`, add the URL and anon key to Vercel, and (optionally) adjust email confirmation in Auth settings.
 
-```bash
-git init
-git add .
-git commit -m "Initial commit: CINESCAPE"
-git branch -M main
-git remote add origin https://github.com/<you>/cinescape.git
-git push -u origin main
-```
+## Data and privacy notes
 
-### Netlify
+- Signed-in ratings and reviews are public and stored in Supabase with Row Level Security.
+- Watchlist, favorites, recently viewed and diary watch-dates are stored in this browser (localStorage).
+- Ratings made before signing in stay on the device. After signing in, a banner offers to import them into the account; nothing is deleted.
 
-1. Netlify > Add new site > Import from Git, choose the repository.
-2. Build command `npm run build`, publish directory `dist` (already set in `netlify.toml`).
-3. Site configuration > Environment variables: add `VITE_TMDB_READ_TOKEN` (or `VITE_TMDB_API_KEY`).
-4. Deploy. The SPA fallback (`/* -> /index.html`) is configured in `netlify.toml` and `public/_redirects`, so direct URLs and refresh work.
+## Tests
 
-Env vars are read at build time, so trigger a new deploy after changing them.
+- `npm test` — Vitest: star-rating keyboard behaviour, review validation, movie of the day, statistics, TMDB proxy security, and user journeys (rate from a card, review validation, edit/delete, diary, watchlist/favorites, search, filters, direct routes, mood/random/compare).
+- `supabase/tests/rls_test.sql` — database behaviour and RLS checks (see `supabase/README.md`).
 
-## Rating system
+## Credits
 
-- **TMDB community rating**: score out of 10 from TMDB users, shown with TMDB's vote count. Always labelled as TMDB.
-- **Your rating**: the stars you give (0.5 to 5), shown only to you.
-- Written reviews are optional (10 to 1000 characters) and can be edited or deleted.
-- The app has no backend, so there are no shared ratings and no app-wide average. TMDB scores are never presented as app-user ratings.
-
-## Data persistence
-
-Watchlist, favorites, ratings, reviews and recently viewed movies are stored in `localStorage` under keys prefixed `cinescape.`. They are specific to one browser on one device and are lost if site data is cleared.
-
-## Known limitations
-
-- Search: TMDB's search endpoint cannot filter by genre, rating or sort. While a search is active, those controls are applied to each loaded page of title matches, not to the whole catalogue. The year filter is sent to TMDB.
-- Demo mode has no images, cast or trailers.
-- Reviews are device-local and not shared.
-- Google Fonts (Fraunces, Instrument Sans) load from the network; system serif and sans-serif fonts are used as fallback.
-- Tested in headless Chromium only (see [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md)).
+Movie data and images by [TMDB](https://www.themoviedb.org). This product uses the TMDB API but is not endorsed or certified by TMDB.

@@ -24,5 +24,6 @@ export default [
       'no-unused-vars': ['error', { varsIgnorePattern: '^_' }],
     },
   },
-  { files: ['*.config.js'], languageOptions: { globals: globals.node } },
+  { files: ['*.config.js', 'api/**/*.js'], languageOptions: { globals: globals.node } },
+  { files: ['src/test/**/*.{js,jsx}'], languageOptions: { globals: { ...globals.browser, ...globals.node, ...globals.vitest } } },
 ];

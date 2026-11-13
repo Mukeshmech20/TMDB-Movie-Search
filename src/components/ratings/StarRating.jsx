@@ -10,8 +10,12 @@ const clampHalf = (v) => Math.min(5, Math.max(0.5, Math.round(v * 2) / 2));
  * Read-only when `onChange` is omitted. With `onChange`, it is a keyboard-accessible slider:
  * arrow keys change the value, Delete/Backspace clears it.
  */
-export default function StarRating({ value = 0, onChange, onClear, size = 28, label = 'Rating' }) {
-  const [hover, setHover] = useState(0);
+export default function StarRating({ value = 0, onChange, onClear, onHover, size = 28, label = 'Rating', inputRef }) {
+  const [hover, setHoverState] = useState(0);
+  const setHover = (v) => {
+    setHoverState(v);
+    onHover?.(v);
+  };
   const interactive = Boolean(onChange);
   const shown = hover || value;
 
@@ -27,6 +31,12 @@ export default function StarRating({ value = 0, onChange, onClear, size = 28, la
     } else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
       event.preventDefault();
       onChange(clampHalf((value || 1) - 0.5));
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      onChange(0.5);
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      onChange(5);
     } else if ((event.key === 'Delete' || event.key === 'Backspace') && onClear) {
       event.preventDefault();
       onClear();
@@ -45,7 +55,7 @@ export default function StarRating({ value = 0, onChange, onClear, size = 28, la
       >
         <svg width={size} height={size} viewBox="0 0 24 24" className="absolute inset-0 text-curtain" aria-hidden="true"><path d={STAR_PATH} fill="currentColor" /></svg>
         <span className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
-          <svg width={size} height={size} viewBox="0 0 24 24" className={hover ? 'text-amber-deep' : 'text-amber'} aria-hidden="true"><path d={STAR_PATH} fill="currentColor" /></svg>
+          <svg width={size} height={size} viewBox="0 0 24 24" className={hover ? 'text-gold-deep' : 'text-gold'} aria-hidden="true"><path d={STAR_PATH} fill="currentColor" /></svg>
         </span>
       </span>
     );
@@ -61,6 +71,7 @@ export default function StarRating({ value = 0, onChange, onClear, size = 28, la
     <span
       className="inline-flex rounded-poster"
       role="slider"
+      ref={inputRef}
       tabIndex={0}
       aria-label={label}
       aria-valuemin={0.5}
@@ -68,6 +79,7 @@ export default function StarRating({ value = 0, onChange, onClear, size = 28, la
       aria-valuenow={value || 0}
       aria-valuetext={value ? `${value} out of 5 stars` : 'Not rated'}
       onMouseLeave={() => setHover(0)}
+      onBlur={() => setHover(0)}
       onKeyDown={onKeyDown}
     >
       {stars}

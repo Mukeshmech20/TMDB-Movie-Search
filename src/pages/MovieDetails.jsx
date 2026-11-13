@@ -5,11 +5,14 @@ import { PlayIcon } from '../components/common/Icons';
 import Poster from '../components/common/Poster';
 import { Carousel } from '../components/movies/MovieRow';
 import TrailerModal from '../components/movies/TrailerModal';
-import ReviewPanel from '../components/ratings/ReviewPanel';
-import StarRating from '../components/ratings/StarRating';
+import RatingPanels from '../components/ratings/RatingPanels';
+import ReviewList from '../components/ratings/ReviewList';
 import { useMovies } from '../context/MovieContext';
+import { useReviews } from '../context/ReviewsContext';
+import useDocumentTitle from '../hooks/useDocumentTitle';
+import { BookmarkIcon, HeartIcon, StarIcon } from '../components/common/Icons';
 import useAsync from '../hooks/useAsync';
-import { formatDate, formatMoney, formatRating, formatRuntime, getYear, languageName } from '../utils/format';
+import { formatDate, formatMoney, formatRuntime, getYear, languageName } from '../utils/format';
 import { getMovieDetails } from '../services/movieService';
 
 function DetailsSkeleton() {
@@ -32,8 +35,10 @@ export default function MovieDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: movie, error, loading, retry } = useAsync((signal) => getMovieDetails(id, { signal }), id);
-  const { inWatchlist, isFavorite, toggleWatchlist, toggleFavorite, addRecent } = useMovies();
+  const { inWatchlist, isFavorite, toggleWatchlist, toggleFavorite, addRecent, inDiary, logWatched, unlogWatched } = useMovies();
+  const { openReview, myReview } = useReviews();
   const [trailer, setTrailer] = useState(null);
+  useDocumentTitle(movie ? `${movie.title}${getYear(movie.release_date) ? ` (${getYear(movie.release_date)})` : ''}` : 'Movie', movie?.overview?.slice(0, 160));
 
   useEffect(() => {
     if (movie) addRecent(movie);
@@ -62,7 +67,8 @@ export default function MovieDetails() {
   const similar = (movie.similar?.results || []).filter((m) => m.title);
   const saved = inWatchlist(movie.id);
   const loved = isFavorite(movie.id);
-  const tmdbRating = movie.vote_average ? Number(movie.vote_average) / 2 : 0;
+  const mine = myReview(movie.id);
+  const watched = inDiary(movie.id);
 
   return (
     <>
@@ -75,7 +81,7 @@ export default function MovieDetails() {
             <Poster path={movie.poster_path} title={movie.title} kind="posterLarge" className="mx-auto aspect-[2/3] w-56 rounded-poster shadow-poster md:w-full" />
             <div>
               <h1 className="text-4xl font-bold leading-tight sm:text-5xl">{movie.title}{getYear(movie.release_date) && <span className="text-mute"> ({getYear(movie.release_date)})</span>}</h1>
-              {movie.tagline && <p className="mt-2 font-display text-lg italic text-amber">{movie.tagline}</p>}
+              {movie.tagline && <p className="mt-2 font-display text-lg italic text-gold">{movie.tagline}</p>}
               <div className="mt-4 flex flex-wrap gap-2">
                 {formatRuntime(movie.runtime) && <span className="badge">{formatRuntime(movie.runtime)}</span>}
                 {(movie.genres || []).map((g) => <Link key={g.id} className="chip" to={`/discover?genre=${g.id}`}>{g.name}</Link>)}
@@ -83,8 +89,12 @@ export default function MovieDetails() {
               <p className="mt-5 max-w-2xl leading-relaxed">{movie.overview || 'No synopsis is available for this movie yet.'}</p>
               <div className="mt-6 flex flex-wrap gap-3">
                 {mainTrailer && <button type="button" className="btn-primary" onClick={() => setTrailer(mainTrailer)}><PlayIcon /> Watch trailer</button>}
-                <button type="button" className="btn-ghost" aria-pressed={saved} onClick={() => toggleWatchlist(movie)}>{saved ? 'Remove from watchlist' : 'Add to watchlist'}</button>
-                <button type="button" className="btn-ghost" aria-pressed={loved} onClick={() => toggleFavorite(movie)}>{loved ? 'Remove from favorites' : 'Add to favorites'}</button>
+                <button type="button" className="btn-royal" onClick={() => openReview(movie, 'stars')}><StarIcon filled={Boolean(mine)} /> {mine ? `Your rating: ${mine.rating}` : 'Rate this movie'}</button>
+                <button type="button" className="btn-ghost" onClick={() => openReview(movie, 'text')}>{mine?.text ? 'Edit review' : 'Write a review'}</button>
+                <button type="button" className="btn-ghost" aria-pressed={saved} onClick={() => toggleWatchlist(movie)}><BookmarkIcon filled={saved} /> {saved ? 'In watchlist' : 'Watchlist'}</button>
+                <button type="button" className="btn-ghost" aria-pressed={loved} onClick={() => toggleFavorite(movie)}><HeartIcon filled={loved} /> {loved ? 'Favorited' : 'Favorite'}</button>
+                <button type="button" className="btn-ghost" aria-pressed={watched} onClick={() => (watched ? unlogWatched(movie) : logWatched(movie))}>{watched ? 'Watched (in diary)' : 'Log as watched'}</button>
+                <Link to={`/compare?a=${movie.id}`} className="btn-ghost">Compare</Link>
               </div>
             </div>
           </div>
@@ -131,22 +141,10 @@ export default function MovieDetails() {
               </ul>
             </section>
           )}
+          <ReviewList movie={movie} />
         </div>
 
-        <aside className="space-y-6" aria-label="Ratings">
-          <section className="stub" aria-labelledby="tmdb-rating">
-            <h2 id="tmdb-rating" className="text-xl font-bold">TMDB community rating</h2>
-            <div className="mt-3 flex items-center gap-3">
-              <span className="font-display text-4xl font-bold text-amber">{formatRating(movie.vote_average)}</span>
-              <div>
-                <StarRating value={tmdbRating} size={20} label="TMDB community rating" />
-                <p className="text-xs text-mute">{movie.vote_count ? `${movie.vote_count.toLocaleString()} votes on TMDB` : 'No votes yet'}</p>
-              </div>
-            </div>
-            <p className="mt-2 text-xs text-mute">Scored out of 10 by TMDB users. {movie.vote_count === 1000 && 'Vote counts in demo mode are placeholders.'}</p>
-          </section>
-          <ReviewPanel key={movie.id} movie={movie} />
-        </aside>
+        <aside aria-label="Ratings"><RatingPanels movie={movie} /></aside>
       </div>
 
       {related.length > 0 && <Carousel title="Recommended for you" subtitle={`If you liked ${movie.title}`} movies={related} />}

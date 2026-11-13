@@ -20,7 +20,7 @@ export function ToastProvider({ children }) {
       {children}
       <div className="fixed bottom-4 left-1/2 z-[70] flex w-[min(92vw,380px)] -translate-x-1/2 flex-col gap-2" role="status" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className={`toast ${t.tone === 'error' ? 'border-crimson' : 'border-amber'}`}>
+          <div key={t.id} className={`toast ${t.tone === 'error' ? 'border-crimson' : 'border-gold'}`}>
             {t.message}
           </div>
         ))}

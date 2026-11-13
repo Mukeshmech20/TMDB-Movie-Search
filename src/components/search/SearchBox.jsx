@@ -22,7 +22,7 @@ export default function SearchBox({ value, onChange, loading, inputRef }) {
           aria-describedby="search-hint"
           aria-invalid={tooShort}
         />
-        {loading && <span className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-amber border-t-transparent" role="status" aria-label="Searching" />}
+        {loading && <span className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-gold border-t-transparent" role="status" aria-label="Searching" />}
       </div>
       <p id="search-hint" className={`mt-1 text-xs ${tooShort ? 'text-crimson' : 'text-mute'}`}>
         {tooShort ? `Type at least ${SEARCH_MIN} characters to search.` : 'Results update as you type.'}

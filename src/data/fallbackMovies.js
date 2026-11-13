@@ -9,6 +9,7 @@ const movie = (id, title, release_date, genre_ids, vote_average, popularity, ove
   vote_count: 1000,
   popularity,
   overview,
+  original_language: 'en',
   poster_path: null,
   backdrop_path: null,
   ...extra,

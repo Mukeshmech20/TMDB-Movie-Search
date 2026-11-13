@@ -11,12 +11,24 @@ const demoSorter = {
   'popularity.desc': (a, b) => b.popularity - a.popularity,
   'vote_average.desc': (a, b) => b.vote_average - a.vote_average,
   'primary_release_date.desc': (a, b) => b.release_date.localeCompare(a.release_date),
+  'primary_release_date.asc': (a, b) => a.release_date.localeCompare(b.release_date),
+  'vote_count.desc': (a, b) => (b.vote_count || 0) - (a.vote_count || 0),
+};
+
+/** TMDB genre syntax: "28,12" = all of, "28|12" = any of. Locally we treat both as "any of" except comma = all. */
+const matchesGenre = (movie, genre) => {
+  if (!genre) return true;
+  const ids = movie.genre_ids || [];
+  const text = String(genre);
+  if (text.includes('|')) return text.split('|').some((g) => ids.includes(Number(g)));
+  return text.split(',').every((g) => ids.includes(Number(g)));
 };
 
 /** Applies discover-style filters to a list (used for demo data and for filtered search results). */
-export function applyFilters(list, { genre, year, rating, sort = 'popularity.desc' }) {
+export function applyFilters(list, { genre, year, rating, language, sort = 'popularity.desc' }) {
   return list
-    .filter((m) => (genre ? (m.genre_ids || []).includes(Number(genre)) : true))
+    .filter((m) => matchesGenre(m, genre))
+    .filter((m) => (language ? (m.original_language || 'en') === language : true))
     .filter((m) => (year ? (m.release_date || '').startsWith(String(year)) : true))
     .filter((m) => (rating ? m.vote_average >= Number(rating) : true))
     .sort(demoSorter[sort] || demoSorter['popularity.desc']);
@@ -54,22 +66,25 @@ export const getGenres = () => {
 export async function searchMovies({ query, year, page: p = 1 }, opts) {
   if (!IS_LIVE) {
     const q = query.toLowerCase();
-    return page(DEMO_MOVIES.filter((m) => m.title.toLowerCase().includes(q)), p);
+    return page(DEMO_MOVIES.filter((m) => m.title.toLowerCase().includes(q) && (!year || m.release_date.startsWith(String(year)))), p);
   }
   return tmdbGet('/search/movie', { query, page: p, primary_release_year: year, include_adult: false }, opts);
 }
 
-export async function discoverMovies({ genre, year, rating, sort = 'popularity.desc', page: p = 1 }, opts) {
-  if (!IS_LIVE) return page(applyFilters(DEMO_MOVIES, { genre, year, rating, sort }), p);
+export async function discoverMovies({ genre, year, rating, language, sort = 'popularity.desc', page: p = 1, maxRuntime }, opts) {
+  if (!IS_LIVE) return page(applyFilters(DEMO_MOVIES, { genre, year, rating, language, sort }), p);
   return tmdbGet(
     '/discover/movie',
     {
       page: p,
       sort_by: sort,
       with_genres: genre,
+      with_original_language: language,
+      'with_runtime.lte': maxRuntime,
       primary_release_year: year,
       'vote_average.gte': rating,
       'vote_count.gte': sort.startsWith('vote_average') ? 200 : rating ? 50 : undefined,
+      'primary_release_date.lte': sort.startsWith('primary_release_date') ? new Date().toISOString().slice(0, 10) : undefined,
       include_adult: false,
     },
     opts,
